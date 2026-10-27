@@ -12,6 +12,8 @@ on:
 # Quyền mặc định của workflow
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 # Tránh nhiều lần triển khai Pages chạy chồng nhau
 concurrency:
