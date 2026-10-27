@@ -1,0 +1,78 @@
+
+name: CI-CD Website
+
+# Tự động chạy khi push lên nhánh main
+# Có thể chạy thủ công trong tab Actions
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Quyền mặc định của workflow
+permissions:
+  contents: read
+
+# Tránh nhiều lần triển khai Pages chạy chồng nhau
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # JOB 1: KIỂM TRA CODE
+  check:
+    name: Check website
+    runs-on: ubuntu-latest
+
+    steps:
+      # Lấy mã nguồn từ repository
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # Kiểm tra đủ 3 file website
+      - name: Check required files
+        run: |
+          test -f index.html
+          test -f style.css
+          test -f script.js
+
+      # Kiểm tra index.html có thẻ title
+      - name: Check HTML title
+        run: grep -qi '<title>' index.html
+
+  # JOB 2: TRIỂN KHAI WEBSITE
+  deploy:
+    name: Deploy website
+    runs-on: ubuntu-latest
+
+    # Chỉ chạy nếu job check thành công
+    needs: check
+
+    # Quyền cần thiết để triển khai GitHub Pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # Chuẩn bị môi trường GitHub Pages
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      # Đóng gói các file website để triển khai
+      - name: Upload website files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      # Đưa website lên GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
